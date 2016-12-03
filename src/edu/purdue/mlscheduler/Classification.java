@@ -13,6 +13,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
+import com.mysql.fabric.xmlrpc.base.Struct;
+
 import java.math.BigInteger;
 
 import weka.classifiers.Classifier;
@@ -46,8 +48,12 @@ public class Classification {
 	
 	public Evaluation classifierEvaluation;
 	
-	public Classification(){
+	public MachineLearningAlgorithm machine_learning_algorithm;
+	
+	public Classification(MachineLearningAlgorithm machine_learning_algorithm){
 		this.classifier_sets = new HashMap<>();
+		
+		this.machine_learning_algorithm = machine_learning_algorithm;
 	}
 	
 	public static Connection getConnection() throws SQLException, Exception {
@@ -385,16 +391,6 @@ public class Classification {
 			
 			j48.setUnpruned(true);
 		}
-		
-		
-		if (false) {
-			String arguments = params;
-
-			classifier = new J48();
-
-			AbstractClassifier.runClassifier(classifier, arguments.split(" "));
-			String tos = classifier.toString();
-		}
 
 		if (true) {
 
@@ -506,9 +502,6 @@ public class Classification {
 						is_backend_id_resulset = false;
 
 					} else {
-						// rs.last() rs.getRow()
-//						this.saveBackend(rs, currentBackend, path, includeViolationsNumber,
-//								updateLearningModelByLastNumberOfRecords > 0);
 						
 						Instances[] instances = this.create_training_instances(rs, "", 0, false);
 						
@@ -518,18 +511,26 @@ public class Classification {
 						ClassifierSet classifier_set = new ClassifierSet();
 						this.classifier_sets.put(cinder_id, classifier_set);
 						
-						J48 read_j48_tree = (J48) create_weka_classifier(new J48(), "", "", 0, read_instances);
-						J48 write_j48_tree = (J48) create_weka_classifier(new J48(), "", "", 0, write_instances);
+						Classifier read_classifier = null;
+						Classifier write_classifier = null;
+						
+						switch (this.machine_learning_algorithm) {
+						case J48:
+							read_classifier = (J48) create_weka_classifier(new J48(), "", "", 0, read_instances);
+							write_classifier = (J48) create_weka_classifier(new J48(), "", "", 0, write_instances);
+							break;
+
+						case BayesianNetwork:
+							read_classifier = (BayesNet) create_weka_classifier(new BayesNet(), "", "", 0, read_instances);
+							write_classifier = (BayesNet) create_weka_classifier(new BayesNet(), "", "", 0, write_instances);
+							break;
+						}
 						
 						classifier_set.cinder_id = cinder_id;
-						classifier_set.read_classifier = read_j48_tree;
-						classifier_set.write_classifier = write_j48_tree;
-						
-						BayesNet read_bayes_net_tree = (BayesNet) create_weka_classifier(new BayesNet(), "", "", 0, read_instances);
-						BayesNet write_bayes_net_tree = (BayesNet) create_weka_classifier(new BayesNet(), "", "", 0, write_instances);
+						classifier_set.read_classifier = read_classifier;
+						classifier_set.write_classifier = write_classifier;
 						
 						is_backend_id_resulset = true;
-
 					}
 
 				}
@@ -543,7 +544,7 @@ public class Classification {
 	
 	public static void main(String[] args){
 		try {
-			Classification c = new Classification();
+			Classification c = new Classification(MachineLearningAlgorithm.RepTree);
 			
 			c.create_models("");
 			
