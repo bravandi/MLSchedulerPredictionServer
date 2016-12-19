@@ -8,12 +8,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
 import com.mysql.fabric.xmlrpc.base.Struct;
+
+import edu.purdue.mlscheduler.BackendWeights_VolumeRequest.BackendWeight;
 
 import java.math.BigInteger;
 
@@ -32,8 +36,16 @@ import weka.core.Instances;
 public class Classification {
 	public class Predictions{
 		String cinder_id;
+		Integer number_of_volumes_plus_requested;
 		double[] read_predictions;
 		double[] write_predictions;
+		
+		public String toString() { 
+		    return "\nCinder ID: " + cinder_id +
+		    	   "\nnumber_of_volumes_including_requested: " + number_of_volumes_plus_requested.toString() + 
+		    	   "\nRead Predictions: " + Arrays.toString(read_predictions)+
+		    	   "\nWrite Predictions: " + Arrays.toString(write_predictions) + "\n";
+		}  
 	}
 	
 	public class ClassifierSet{
@@ -84,22 +96,28 @@ public class Classification {
 			Predictions predictions = new Predictions();
 			results.add(predictions);
 			ClassifierSet classifier_set = this.classifier_sets.get(cinder_id);
-
+						
 			predictions.cinder_id = cinder_id;
+			BackendWeight backend_weight = backend_current_weights.backend_weight_map.get(cinder_id);
+			
+			if (backend_weight == null)
+				backend_weight = backend_current_weights.empty_backend_weight_instance();
 			
 			predictions.read_predictions = this.predict_with_classifier(
 					classifier_set.read_classifier,
 					clock,
 					backend_current_weights.volume_request,
-					backend_current_weights.backend_weight_map.get(cinder_id),
+					backend_weight,
 					true);
-			
+				
 			predictions.write_predictions = this.predict_with_classifier(
 					classifier_set.read_classifier,
 					clock,
 					backend_current_weights.volume_request,
-					backend_current_weights.backend_weight_map.get(cinder_id),
+					backend_weight,
 					false);
+			
+			predictions.number_of_volumes_plus_requested = backend_weight.live_volume_count_during_clock + 1;
 		}
 		
 		return results;
@@ -122,7 +140,6 @@ public class Classification {
 
 		int volume_count = backend_weight.live_volume_count_during_clock + 1;
 		
-		
 		read_instance.setValue(read_weka_dataset.attribute("clock"), clock);
 		read_instance.setValue(read_weka_dataset.attribute("volume_count"), volume_count);
 		
@@ -143,7 +160,7 @@ public class Classification {
 			
 			predictions = classifier.distributionForInstance(write_instance);
 		}
-
+				
 		return predictions;
 	}
 	
@@ -542,6 +559,7 @@ public class Classification {
 		}
 	}
 	
+	/*
 	public static void main(String[] args){
 		try {
 			Classification c = new Classification(MachineLearningAlgorithm.RepTree);
@@ -560,4 +578,5 @@ public class Classification {
 			e.printStackTrace();
 		}
 	}
+	*/
 }

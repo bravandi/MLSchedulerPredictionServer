@@ -25,11 +25,24 @@ public class BackendWeights_VolumeRequest{
 	}
 	
 	public class BackendWeight{
+		// not used
 		public BigInteger backend_id;
+		// not used
 		public String cinder_id;
 		public int live_volume_count_during_clock;
 		public int requested_read_iops_total;
-		public int requested_write_iops_total;
+		public int requested_write_iops_total;	
+	}
+	
+	public BackendWeight empty_backend_weight_instance(){
+		BackendWeight result = new BackendWeight();
+		
+//		result.backend_id
+		result.requested_read_iops_total = 0;
+		result.requested_write_iops_total=0;
+		result.live_volume_count_during_clock=0;
+		
+		return result;
 	}
 	
 	public VolumeRequest volume_request;

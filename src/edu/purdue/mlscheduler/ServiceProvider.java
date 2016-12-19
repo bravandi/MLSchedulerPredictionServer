@@ -29,6 +29,7 @@ public class ServiceProvider {
     static class MyHandler implements HttpHandler {
     	
     	Map<MachineLearningAlgorithm, Classification> classification_map;
+    	BigInteger current_training_experiment_id = new BigInteger("0");
     	
     	public MyHandler() throws Exception, SQLException{
     		this.classification_map = new HashMap<MachineLearningAlgorithm, Classification>();
@@ -47,10 +48,15 @@ public class ServiceProvider {
     	    return result;
     	}
     	
-    	public Classification get_classification(MachineLearningAlgorithm algorithm) throws Exception{
+    	public Classification get_classification(MachineLearningAlgorithm algorithm, BigInteger training_experiment_id) throws Exception{
+    		if (this.current_training_experiment_id.compareTo(training_experiment_id) != 0){
+    			this.reset();
+    		}
+    		
     		if (this.classification_map.containsKey(algorithm) == false){
     			Classification c = new Classification(algorithm);
     			
+    			// create a classifier of the given algorithm for each backend
     			c.create_models("");
     			
     			this.classification_map.put(algorithm, c);
@@ -96,12 +102,18 @@ public class ServiceProvider {
         	
         	int clock = new Integer(params.get("clock"));
         	BigInteger volume_request_id = new BigInteger(params.get("volume_request_id"));
-        	MachineLearningAlgorithm algorithm = MachineLearningAlgorithm.parse(params.get("algorithm")); 
+        	MachineLearningAlgorithm algorithm = MachineLearningAlgorithm.parse(params.get("algorithm"));
+        	BigInteger training_experiment_id = new BigInteger(params.get("training_experiment_id"));
         	
         	LinkedList<Predictions> predictions_list = null;
         	
         	try {
-        		predictions_list = this.get_classification(algorithm).predict(clock, volume_request_id);
+        		// http://10.254.252.4:81/?reset
+        		// http://10.254.252.4:81/?clock=0&volume_request_id=7645&training_experiment_id=14&algorithm=j48
+        		
+        		Classification classification_instance =  this.get_classification(algorithm, training_experiment_id);
+        		
+        		predictions_list = classification_instance.predict(clock, volume_request_id);
         		
         		Gson gson = new Gson();
         		
