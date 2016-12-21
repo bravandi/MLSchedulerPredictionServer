@@ -2,6 +2,7 @@ package edu.purdue.mlscheduler;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -31,6 +32,7 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.converters.ArffSaver;
 
 @SuppressWarnings("deprecation")
 public class Classification {
@@ -255,7 +257,9 @@ public class Classification {
 			ResultSet training_resultset, 
 			String path, 
 			int includeViolationsNumber,
-			boolean updateLearningModel) throws Exception {
+			boolean updateLearningModel,
+			BigInteger experiment_id,
+			String backend_cinder_id) throws Exception {
 		
 		Instances result[] = new Instances[2];
 		
@@ -288,11 +292,11 @@ public class Classification {
 			// rs.last() rs.getRow()
 			if (weka_dataset_for_read.attribute("read_vio_group") != null) {
 
-				if (sampled_read_violation_count == 0) {
+				if (sampled_read_violation_count >= 0 && sampled_read_violation_count <= 0) {
 					group = "v1";
-				} else if (sampled_read_violation_count > 0 && sampled_read_violation_count <= 2) {
+				} else if (sampled_read_violation_count >= 1 && sampled_read_violation_count <= 2) {
 					group = "v2";
-				} else if (sampled_read_violation_count > 2 && sampled_read_violation_count <= 4) {
+				} else if (sampled_read_violation_count >= 3 && sampled_read_violation_count <= 4) {
 					group = "v3";
 				} else {
 					group = "v4";
@@ -363,34 +367,42 @@ public class Classification {
 //			backendAccuracy[backendIndex][0] = backend;
 //			backendAccuracy[backendIndex][1] = accuracy;
 
-		} else {
-//			ArffSaver saver = new ArffSaver();
-//
-//			saver.setInstances(trainingInstances);
-//
-//			String saveToPath = "";
-//
-//			if (path == null || path == "")
-//
-//				path = Experiment.saveResultPath;
-//
-//			saveToPath = path + //
-//					(Scheduler.isTraining == true ? "TRN_" : "EXP_") //
-//					+ backend.getExperiment().getID() + "_" + backend.getID() + "_" + backend.getDescription()
-//					+ ".arff";
-//
-//			saver.setFile(new File(saveToPath));
-
-			//// saver.setDestination(new File(path));
-
-			//saver.writeBatch();
-			// Create the instance
-
-			//// edu.purdue.simulation.BlockStorageSimulator.log(Arrays.toString(repTree
-			//// .distributionForInstance(iExample)));
+		} else {			
+			path = "D:\\GoogleDrive\\Research\\MLScheduler\\experiment\\" + experiment_id.toString() + "\\";
+			
+			File directory = new File(String.valueOf(path));
+			if (! directory.exists()){
+		        directory.mkdir();
+		    }
+			
+			String file_name = path + backend_cinder_id + ".arff";
+			
+			this.save_weka_dataset(weka_dataset_for_read, path + "read" + backend_cinder_id + ".arff");
+			this.save_weka_dataset(weka_dataset_for_write, path + "write" + backend_cinder_id + ".arff");
 		}
 		
 		return result;
+	}
+	
+	public void save_weka_dataset(Instances dataset, String path) throws IOException{
+		ArffSaver saver = new ArffSaver();
+
+		saver.setInstances(dataset);
+
+		String saveToPath = "";
+
+//		if (path == null || path == "")
+//
+//			path = Experiment.saveResultPath;
+
+		saveToPath = path;
+
+		saver.setFile(new File(saveToPath));
+		
+		//// saver.setDestination(new File(path));
+
+		saver.writeBatch();
+		// Create the instance
 	}
 	
 	@SuppressWarnings("unused")
@@ -481,7 +493,7 @@ public class Classification {
 	 *            violation label
 	 * @throws Exception
 	 */
-	public void create_models(String path) throws java.lang.Exception {
+	public void create_models(String path, BigInteger experiment_id) throws java.lang.Exception {
 
 		Connection connection = Classification.getConnection();
 
@@ -520,7 +532,7 @@ public class Classification {
 
 					} else {
 						
-						Instances[] instances = this.create_training_instances(rs, "", 0, false);
+						Instances[] instances = this.create_training_instances(rs, "", 0, false, experiment_id, cinder_id);
 						
 						Instances read_instances = instances[0];
 						Instances write_instances = instances[1];
@@ -558,25 +570,4 @@ public class Classification {
 
 		}
 	}
-	
-	/*
-	public static void main(String[] args){
-		try {
-			Classification c = new Classification(MachineLearningAlgorithm.RepTree);
-			
-			c.create_models("");
-			
-			LinkedList<Predictions> p = c.predict(0, new BigInteger("1490"));
-			
-			p.clear();
-					
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	*/
 }

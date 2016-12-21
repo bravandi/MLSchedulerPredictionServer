@@ -48,7 +48,11 @@ public class ServiceProvider {
     	    return result;
     	}
     	
-    	public Classification get_classification(MachineLearningAlgorithm algorithm, BigInteger training_experiment_id) throws Exception{
+    	public Classification get_classification(
+    			MachineLearningAlgorithm algorithm, 
+    			BigInteger training_experiment_id,
+    			BigInteger experiment_id) throws Exception{
+    		
     		if (this.current_training_experiment_id.compareTo(training_experiment_id) != 0){
     			this.reset();
     		}
@@ -57,7 +61,7 @@ public class ServiceProvider {
     			Classification c = new Classification(algorithm);
     			
     			// create a classifier of the given algorithm for each backend
-    			c.create_models("");
+    			c.create_models("", experiment_id);
     			
     			this.classification_map.put(algorithm, c);
     		}
@@ -104,6 +108,7 @@ public class ServiceProvider {
         	BigInteger volume_request_id = new BigInteger(params.get("volume_request_id"));
         	MachineLearningAlgorithm algorithm = MachineLearningAlgorithm.parse(params.get("algorithm"));
         	BigInteger training_experiment_id = new BigInteger(params.get("training_experiment_id"));
+        	BigInteger experiment_id = new BigInteger(params.get("experiment_id"));
         	
         	LinkedList<Predictions> predictions_list = null;
         	
@@ -111,7 +116,10 @@ public class ServiceProvider {
         		// http://10.254.252.4:81/?reset
         		// http://10.254.252.4:81/?clock=0&volume_request_id=7645&training_experiment_id=14&algorithm=j48
         		
-        		Classification classification_instance =  this.get_classification(algorithm, training_experiment_id);
+        		Classification classification_instance =  this.get_classification(
+        				algorithm, 
+        				training_experiment_id,
+        				experiment_id);
         		
         		predictions_list = classification_instance.predict(clock, volume_request_id);
         		
