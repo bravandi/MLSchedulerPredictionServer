@@ -294,9 +294,9 @@ public class Classification {
 
 				if (sampled_read_violation_count >= 0 && sampled_read_violation_count <= 0) {
 					group = "v1";
-				} else if (sampled_read_violation_count >= 1 && sampled_read_violation_count <= 2) {
+				} else if (sampled_read_violation_count >= 1 && sampled_read_violation_count <= 1) {
 					group = "v2";
-				} else if (sampled_read_violation_count >= 3 && sampled_read_violation_count <= 4) {
+				} else if (sampled_read_violation_count >= 2 && sampled_read_violation_count <= 2) {
 					group = "v3";
 				} else {
 					group = "v4";
@@ -377,8 +377,14 @@ public class Classification {
 			
 			String file_name = path + backend_cinder_id + ".arff";
 			
-			this.save_weka_dataset(weka_dataset_for_read, path + "read" + backend_cinder_id + ".arff");
-			this.save_weka_dataset(weka_dataset_for_write, path + "write" + backend_cinder_id + ".arff");
+			try{
+				this.save_weka_dataset(weka_dataset_for_read, path + "read" + backend_cinder_id + ".arff");
+				this.save_weka_dataset(weka_dataset_for_write, path + "write" + backend_cinder_id + ".arff");
+			}
+			catch(Exception ex){
+				
+				System.out.println(ex.getMessage());
+			}
 		}
 		
 		return result;
@@ -497,8 +503,8 @@ public class Classification {
 
 		Connection connection = Classification.getConnection();
 
-		// ex_ID, size
-		try (CallableStatement cStmt = connection.prepareCall("{call get_training_dataset(?)}")) {
+		// ex_ID, if 0 will not use min_req_vpm_records config of the experiment
+		try (CallableStatement cStmt = connection.prepareCall("{call get_training_dataset(?, 1)}")) {
 
 			cStmt.setBigDecimal(1, BigDecimal.valueOf(0)); // exp_ID
 
